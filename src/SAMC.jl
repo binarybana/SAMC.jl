@@ -1,7 +1,6 @@
 module SAMC
 
-export MCMC, Sampler
-export MHRecord, AMWGRecord, SAMCRecord, set_energy_limits, sample
+export MCMC, Sampler, MHRecord, AMWGRecord, SAMCRecord, set_energy_limits, sample
 
 abstract MCMC
 abstract Sampler

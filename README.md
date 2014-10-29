@@ -15,7 +15,7 @@ using SAMC
 import SAMC: energy, propose!, reject!, save!
 
 type MySampler <: SAMC.Sampler
-  curr :: Float64
+  curr :: Float64 #Currently must be named curr
   old :: Float64
   data :: Matrix{Float64}
 end
@@ -35,5 +35,13 @@ end
 function energy(obj::MySampler)
   logpdf(Normal(obj.curr,1.0), data) |> sum
 end
+
+sampler = MySampler(0.,0.) #This initializes the starting point of the chain
+mh = MHRecord(sampler)
+sample!(mh,2000,burn=1000)
+
+# Now mh.db will be a Vector{Any} of Floats (as in general the Sampler.curr
+# type is a pointer type
+
 ```
 
