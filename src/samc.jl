@@ -5,7 +5,8 @@ type SAMCRecord <: MCMC
     db :: Any
     counts :: Vector{Int}
     thetas :: Vector{Float64}
-    grid :: Ranges{Float64}
+    grid :: Range{Float64}
+    energies:: Vector{Float64}
 
     count_accept :: Int
     count_total :: Int
@@ -21,7 +22,7 @@ type SAMCRecord <: MCMC
     refden_power :: Float64
 end
 
-SAMCRecord(obj::Sampler) = SAMCRecord(obj,obj,0.0,nothing,Int[],Float64[],0.0:0.0,0,0,1,0,1,10000.0,1.0,1.0,Float64[],0.0)
+SAMCRecord(obj::Sampler) = SAMCRecord(obj,obj,Inf,Any[],Int[],Float64[],Float64[],0.0:0.0,0,0,1,0,1,10000.0,1.0,1.0,Float64[],0.0)
 
 function set_energy_limits(obj::Sampler, iters=1000, refden_power=0.0)
     record = SAMCRecord(obj)
@@ -33,10 +34,8 @@ function set_energy_limits(obj::Sampler, iters=1000, refden_power=0.0)
         propose(obj)
         low = high = oldenergy = energyval = energy(obj)
     end
-    oldobj = copy(obj)
     for i=1:iters
-        copy!(oldobj, obj)
-        propose(obj)
+        propose!(obj)
         energyval = energy(obj)
         r = (oldenergy - energyval) / 3.0 # Higher temperature for exploration
         if r > 0.0 || rand() < exp(r) # Accept
@@ -46,8 +45,9 @@ function set_energy_limits(obj::Sampler, iters=1000, refden_power=0.0)
                 high = energyval
             end
             oldenergy = energyval
+            save!(obj)
         else
-            copy!(obj, oldobj) # Reject
+            reject!(obj)
         end
     end
     spread = high - low
@@ -61,22 +61,14 @@ function set_energy_limits(obj::Sampler, iters=1000, refden_power=0.0)
     record.refden = Float64[record.grid.len-1:-1:0].^refden_power
     record.refden /= sum(record.refden)
     record.refden_power = refden_power
-    record.counts = zeros(Int, record.grid.len)
-    record.thetas = zeros(Float64, record.grid.len)
+    record.counts = zeros(Int, length(record.grid))
+    record.thetas = zeros(Float64, length(record.grid))
     record
-end
-
-function clear(rec::SAMCRecord)
-    rec.db = nothing
-    rec.delta = 1.0
-    rec.iteration = 0
-    rec.count_accept = 0
-    rec.count_total = 0
 end
 
 function sample(rec::SAMCRecord, iters::Int, temperature::Float64=1.0; verbose=0)
     oldenergy = energy(rec.obj)
-    oldregion = clamp(searchsortedfirst(rec.grid, oldenergy), rec.grid.start, rec.grid.len)
+    oldregion = clamp(searchsortedfirst(rec.grid, oldenergy), 1, length(rec.grid))
     dbsize = div(rec.iteration + iters - rec.burn, rec.thin)
     dbsize = dbsize > 0 ? dbsize : 0
     println("Initial energy: $oldenergy")
@@ -84,7 +76,7 @@ function sample(rec::SAMCRecord, iters::Int, temperature::Float64=1.0; verbose=0
     for current_iter = rec.iteration:(rec.iteration+iters)
         rec.iteration += 1
         rec.delta = temperature * rec.stepscale / max(rec.stepscale, rec.iteration)
-        propose(rec.obj)
+        propose!(rec.obj)
         newenergy = energy(rec.obj)
 
         if newenergy < rec.mapenergy #I need to decide if I want this or not
@@ -93,16 +85,18 @@ function sample(rec::SAMCRecord, iters::Int, temperature::Float64=1.0; verbose=0
         end
 
         ### Acceptance of new moves ###
-        newregion = clamp(searchsortedfirst(rec.grid, newenergy), rec.grid.start, rec.grid.len)
+        newregion = clamp(searchsortedfirst(rec.grid, newenergy), 1, length(rec.grid))
         r = rec.thetas[oldregion] - rec.thetas[newregion] + (oldenergy - newenergy)
+
         if r > 0.0 || rand() < exp(r) #Accept
             rec.counts[newregion] += 1
             rec.count_accept += 1
             oldregion = newregion
             oldenergy = newenergy
+            save!(rec.obj)
         else #Reject
             rec.counts[oldregion] += 1
-            reject(rec.obj)
+            reject!(rec.obj)
         end
         rec.count_total += 1
         rec.thetas -= rec.delta*rec.refden
