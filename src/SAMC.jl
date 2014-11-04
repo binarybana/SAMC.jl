@@ -1,6 +1,6 @@
 module SAMC
 
-export MCMC, Sampler, MHRecord, AMWGRecord, SAMCRecord, set_energy_limits, sample
+export MCMC, Sampler, MHRecord, AMWGRecord, SAMCRecord, set_energy_limits, sample, plotsamc
 
 abstract MCMC
 abstract Sampler
@@ -18,5 +18,7 @@ save!(x::Sampler) = error("Must be instantiated for your sampler object")
 include("mh.jl")
 include("amwg.jl")
 include("samc.jl")
+
+include("samc_utils.jl")
 
 end # module

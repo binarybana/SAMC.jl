@@ -2,12 +2,14 @@ type SAMCRecord <: MCMC
     obj :: Sampler
     mapvalue :: Sampler
     mapenergy :: Float64
-    db :: Any
+    db :: Vector{Any}
+
     counts :: Vector{Int}
     thetas :: Vector{Float64}
-    grid :: Range{Float64}
-    energies:: Vector{Float64}
+    energy_trace :: Vector{Float64}
+    theta_trace :: Vector{Float64}
 
+    grid :: Range{Float64}
     count_accept :: Int
     count_total :: Int
     iteration :: Int
@@ -22,9 +24,13 @@ type SAMCRecord <: MCMC
     refden_power :: Float64
 end
 
-SAMCRecord(obj::Sampler) = SAMCRecord(obj,obj,Inf,Any[],Int[],Float64[],Float64[],0.0:0.0,0,0,1,0,1,10000.0,1.0,1.0,Float64[],0.0)
+SAMCRecord(obj::Sampler) = SAMCRecord(obj,obj,Inf,Any[],
+                                        Int[],Float64[],Float64[],Float64[],
+                                        0.0:0.0,0,0,1,
+                                        0,1,10000.0,1.0,1.0,
+                                        Float64[],0.0)
 
-function set_energy_limits(obj::Sampler, iters=1000, refden_power=0.0)
+function set_energy_limits(obj::Sampler; iters=1000, refden_power=0.0)
     record = SAMCRecord(obj)
     low = energy(obj) 
     high = low
@@ -51,7 +57,7 @@ function set_energy_limits(obj::Sampler, iters=1000, refden_power=0.0)
         end
     end
     spread = high - low
-    low = ifloor(low - (0.6*spread))
+    low = ifloor(low - (1.0*spread))
     high = iceil(high + (0.2*spread))
     println("Done. Setting limits to ($low, $high)")
     spread = high - low
@@ -69,8 +75,6 @@ end
 function sample(rec::SAMCRecord, iters::Int, temperature::Float64=1.0; verbose=0)
     oldenergy = energy(rec.obj)
     oldregion = clamp(searchsortedfirst(rec.grid, oldenergy), 1, length(rec.grid))
-    dbsize = div(rec.iteration + iters - rec.burn, rec.thin)
-    dbsize = dbsize > 0 ? dbsize : 0
     println("Initial energy: $oldenergy")
 
     for current_iter = rec.iteration:(rec.iteration+iters)
@@ -98,17 +102,20 @@ function sample(rec::SAMCRecord, iters::Int, temperature::Float64=1.0; verbose=0
             rec.counts[oldregion] += 1
             reject!(rec.obj)
         end
-        rec.count_total += 1
-        rec.thetas -= rec.delta*rec.refden
-        rec.thetas[oldregion] += rec.delta
 
-        #if rec.iteration >= rec.burn && rec.iteration%rec.thin == 0
-            #save_iter_db(rec.thetas[oldregion], oldenergy,
-            #div(rec.iteration-rec.burn, rec.thin)) # FIXME
-        #end
+        rec.thetas -= rec.delta*rec.refden#.*(rec.counts .> 0)
+        rec.thetas[oldregion] += 2*rec.delta*rec.refden[oldregion]
+
+        push!(rec.energy_trace, oldenergy)
+        push!(rec.theta_trace, rec.thetas[oldregion])
+        rec.count_total += 1
+
+        if rec.iteration >= rec.burn && rec.iteration%rec.thin == 0
+            push!(rec.db, deepcopy(rec.obj.bnd)) # FIXME: lazy hardcoding
+        end
         
         if rec.iteration % 10000 == 0
-            @printf "Iteration: %8d, delta: %5.2f, best energy: %7f, current energy: %7f\n" rec.iteration rec.delta rec.mapenergy oldenergy
+            @printf "Iteration: %8d, delta: %5.3f, best energy: %7f, current energy: %7f\n" rec.iteration rec.delta rec.mapenergy oldenergy
         end
     end
     #save_state_db(rec, temperature) #FIXME
