@@ -20,6 +20,8 @@ type SAMCRecord <: MCMC
     delta :: Float64
     scale :: Float64
 
+    nonempty :: Int
+
     refden :: Vector{Float64}
     refden_power :: Float64
 end
@@ -27,7 +29,8 @@ end
 SAMCRecord(obj::Sampler) = SAMCRecord(obj,obj,Inf,Any[],
                                         Int[],Float64[],Float64[],Float64[],
                                         0.0:0.0,0,0,1,
-                                        0,1,10000.0,1.0,1.0,
+                                        1000,1,10000.0,1.0,1.0,
+                                        0,
                                         Float64[],0.0)
 
 function set_energy_limits(obj::Sampler; iters=1000, refden_power=0.0)
@@ -108,6 +111,17 @@ function sample(rec::SAMCRecord, iters::Int, temperature::Float64=1.0; verbose=0
 
         push!(rec.energy_trace, oldenergy)
         push!(rec.theta_trace, rec.thetas[oldregion])
+
+        if rec.iteration < rec.burn
+            nonempty = findfirst(rec.counts)
+        else
+            correction = rec.thetas[nonempty]
+            for i=1:length(rec.thetas)
+                #if rec.counts[i] > 0
+                    rec.thetas[i] -= correction
+                #end
+            end
+        end
         rec.count_total += 1
 
         if rec.iteration >= rec.burn && rec.iteration%rec.thin == 0
