@@ -40,7 +40,7 @@ function set_energy_limits(obj::Sampler; iters=1000, refden_power=0.0)
     oldenergy = low
     energyval = low
     while high > 1e90
-        propose(obj)
+        propose!(obj)
         low = high = oldenergy = energyval = energy(obj)
     end
     for i=1:iters
@@ -75,14 +75,14 @@ function set_energy_limits(obj::Sampler; iters=1000, refden_power=0.0)
     record
 end
 
-function sample(rec::SAMCRecord, iters::Int, temperature::Float64=1.0; verbose=0)
+function sample(rec::SAMCRecord, iters::Int; temperature::Float64=1.0, beta::Float64=1.0, verbose=0)
     oldenergy = energy(rec.obj)
     oldregion = clamp(searchsortedfirst(rec.grid, oldenergy), 1, length(rec.grid))
     println("Initial energy: $oldenergy")
 
     for current_iter = rec.iteration:(rec.iteration+iters)
         rec.iteration += 1
-        rec.delta = temperature * rec.stepscale / max(rec.stepscale, rec.iteration)
+        rec.delta = temperature * rec.stepscale / max(rec.stepscale, rec.iteration^beta)
         propose!(rec.obj)
         newenergy = energy(rec.obj)
 
