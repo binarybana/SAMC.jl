@@ -4,6 +4,8 @@ type PopSAMCRecord <: MCMC
     mapenergy :: Float64
     dbs :: Vector{Vector{Any}}
 
+    dbs_theta :: Vector{Vector{Float64}}
+
     counts :: Vector{Int}
     thetas :: Vector{Float64}
     energy_traces :: Vector{Vector{Float64}}
@@ -27,6 +29,7 @@ type PopSAMCRecord <: MCMC
 end
 
 PopSAMCRecord(genfunc::Function, k::Int) = PopSAMCRecord(map(genfunc,1:k),genfunc(1),Inf,map(x->Any[],1:k),
+                                        map(x->Float64[],1:k),
                                         Int[],Float64[],map(x->Float64[],1:k),map(x->Float64[],1:k),
                                         0.0:0.0,0,0,1,
                                         1000,1,10000.0,1.0,1.0,
@@ -139,6 +142,7 @@ function sample(rec::PopSAMCRecord, iters::Int; temperature::Float64=1.0, beta::
         if rec.iteration >= rec.burn && rec.iteration%rec.thin == 0
             for chain=1:k
                 push!(rec.dbs[chain], deepcopy(rec.objs[chain]))
+                push!(rec.dbs_theta[chain], rec.thetas[oldregions[chain]])
             end
         end
         rec.count_total += k
@@ -151,3 +155,26 @@ function sample(rec::PopSAMCRecord, iters::Int; temperature::Float64=1.0, beta::
     println("Total samples: $(rec.count_total)")
     println("Acceptance: $(rec.count_accept/rec.count_total)")
 end
+
+function posterior_e(f::Function, rec::PopSAMCRecord)
+    K = length(rec.dbs) 
+    N = length(rec.dbs[1])
+    @assert K>0
+    @assert N>0
+    sumthetas = 0.0
+    maxthetas = -Inf
+    for k=1:K
+        maxthetas = max(maximum(rec.dbs_theta[k]), maxthetas)
+    end
+    for k=1:K,i=1:N
+        sumthetas += exp(maxthetas-rec.dbs_theta[k][i])
+    end
+    
+    sub = zero(f(rec.dbs[1][1]))
+    for k=1:K,i=1:N
+        sub += f(rec.dbs[k][i])*exp(maxthetas-rec.dbs_theta[k][i])
+    end
+    sub /= sumthetas
+    sub
+end
+
