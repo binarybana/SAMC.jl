@@ -178,3 +178,34 @@ function posterior_e(f::Function, rec::PopSAMCRecord)
     sub
 end
 
+function cum_posterior_e(f::Function, rec::PopSAMCRecord)
+    K = length(rec.dbs) 
+    N = length(rec.dbs[1])
+    @assert K>0
+    @assert N>0
+    sumthetas = 0.0
+    maxthetas = -Inf
+
+    exres = zero(f(rec.dbs[1][1]))
+
+    cum_post = Array(typeof(exres),0)
+    fres = [Array(typeof(exres),0) for _=1:K]
+
+    for i=1:N
+        for k=1:K
+            maxthetas = max(rec.dbs_theta[k][i], maxthetas)
+            push!(fres[k], f(rec.dbs[k][i]))
+        end
+        sumthetas = 0.0
+        for k=1:K,j=1:i
+            sumthetas += exp(maxthetas-rec.dbs_theta[k][j])
+        end
+        sub = zero(eltype(fres[1]))
+        for k=1:K,j=1:i
+            sub += fres[k][j]*exp(maxthetas-rec.dbs_theta[k][j])
+        end
+        push!(cum_post, sub/sumthetas)
+    end
+    cum_post
+end
+
