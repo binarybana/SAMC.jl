@@ -124,9 +124,9 @@ function sample(rec::PopSAMCRecord, iters::Int; temperature::Float64=1.0, beta::
         end
 
         if rec.iteration < rec.burn
-            nonempty = findfirst(rec.counts)
+            rec.nonempty = findfirst(rec.counts)
         else
-            correction = rec.thetas[nonempty]
+            correction = rec.thetas[rec.nonempty]
             for i=1:length(rec.thetas)
                 #if rec.counts[i] > 0
                     rec.thetas[i] -= correction
