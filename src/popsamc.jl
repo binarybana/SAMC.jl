@@ -120,7 +120,7 @@ function sample(rec::PopSAMCRecord, iters::Int; temperature::Float64=1.0, beta::
 
         rec.thetas -= rec.delta*rec.refden #.*(rec.counts .> 0)
         for region in oldregions
-            rec.thetas[region] += 2*rec.delta*rec.refden[region]/k
+            rec.thetas[region] += rec.delta/k
         end
 
         if rec.iteration < rec.burn

@@ -107,7 +107,7 @@ function sample(rec::SAMCRecord, iters::Int; temperature::Float64=1.0, beta::Flo
         end
 
         rec.thetas -= rec.delta*rec.refden#.*(rec.counts .> 0)
-        rec.thetas[oldregion] += 2*rec.delta*rec.refden[oldregion]
+        rec.thetas[oldregion] += rec.delta
 
         push!(rec.energy_trace, oldenergy)
         push!(rec.theta_trace, rec.thetas[oldregion])
