@@ -15,10 +15,10 @@ type MHRecord <: MCMC
     scheme_accept :: Dict{Int,Int}
 end
 
-MHRecord(obj::Sampler; burn=0, thin=1) = MHRecord(deepcopy(obj),
+MHRecord(obj::Sampler; burn=0, thin=1) = MHRecord(obj,
                                 record(obj), #mapvalue
                                 Inf, #mapenergy
-                                Any[], #db
+                                Array(typeof(record(obj)),0), #db
                                 0,0,1, #accept, total, iteration
                                 burn,thin, #burn, thin
                                 (Int=>Int)[],

@@ -15,14 +15,14 @@ type AMWGRecord <: MCMC
     thin :: Int
 end
 
-AMWGRecord(obj::Sampler, blocks; burn=0, thin=1) = AMWGRecord(deepcopy(obj), 
+AMWGRecord(obj::Sampler, blocks; burn=0, thin=1) = AMWGRecord(obj, 
                                 blocks, #Gibbs updates
                                 50, # batchsize
                                 ones(blocks), #sigmas
                                 0.44, #target
                                 record(obj), #mapvalue
                                 Inf, #mapenergy
-                                Any[], #db
+                                Array(typeof(record(obj)),0), #db
                                 zeros(Int,blocks),1, #accept, iterations
                                 burn,thin) #burn, thin
 
@@ -73,7 +73,7 @@ function sample!(rec::AMWGRecord, iters::Int; verbose=0, adjust="burnin")
         end
 
         if rec.iterations >= rec.burn && rec.iterations%rec.thin == 0
-            push!(rec.db, deepcopy(rec.obj))
+            push!(rec.db, record(rec.obj))
         end
         
         if (rec.iterations) % 1000 == 0 && verbose>1

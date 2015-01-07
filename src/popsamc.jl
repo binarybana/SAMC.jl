@@ -31,9 +31,9 @@ end
 
 function PopSAMCRecord(genfunc::Function, k::Int)
   obj = map(genfunc,1:k)
-  
+
   return PopSAMCRecord(obj,record(obj[1]),
-    Inf,map(x->Any[],1:k),
+    Inf,map(x->Array(typeof(record(obj[1])),0),1:k),
     map(x->Float64[],1:k),
     Int[],Float64[],map(x->Float64[],1:k),map(x->Float64[],1:k),
     0.0:0.0,0,0,1,
@@ -44,7 +44,7 @@ end
 
 function set_energy_limits(genfunc::Function, k::Int; iters=1000, refden_power=0.0)
     rec = PopSAMCRecord(genfunc, k)
-    oldenergies = map(energy,rec.objs) 
+    oldenergies = map(energy,rec.objs)
     low = minimum(oldenergies)
     high = maximum(oldenergies)
     for i=1:iters
@@ -81,9 +81,9 @@ function set_energy_limits(genfunc::Function, k::Int; iters=1000, refden_power=0
     rec
 end
 
-function sample!(rec::PopSAMCRecord, iters::Int; 
-                 temperature::Float64=1.0, 
-                 beta::Float64=1.0, 
+function sample!(rec::PopSAMCRecord, iters::Int;
+                 temperature::Float64=1.0,
+                 beta::Float64=1.0,
                  verbose=0)
 
     if rec.grid == 0.0:0.0
@@ -91,8 +91,8 @@ function sample!(rec::PopSAMCRecord, iters::Int;
         "on your PopSAMCRecord before calling sample"))
     end
 
-    oldenergies = map(energy,rec.objs) 
-    oldregions = map(x->clamp(searchsortedfirst(rec.grid, x), 1, 
+    oldenergies = map(energy,rec.objs)
+    oldregions = map(x->clamp(searchsortedfirst(rec.grid, x), 1,
       length(rec.grid)), oldenergies)
     k = length(rec.objs)
 
@@ -104,7 +104,7 @@ function sample!(rec::PopSAMCRecord, iters::Int;
 
     for current_iter = rec.iteration:(rec.iteration+iters)
         rec.iteration += 1
-        rec.delta = temperature * rec.stepscale / 
+        rec.delta = temperature * rec.stepscale /
           max(rec.stepscale, rec.iteration^beta)
         for chain=1:k
             propose!(rec.objs[chain])
@@ -116,9 +116,9 @@ function sample!(rec::PopSAMCRecord, iters::Int;
             end
 
             ### Acceptance of new moves ###
-            newregion = clamp(searchsortedfirst(rec.grid, newenergy), 
+            newregion = clamp(searchsortedfirst(rec.grid, newenergy),
                               1, length(rec.grid))
-            r = rec.thetas[oldregions[chain]] - rec.thetas[newregion] + 
+            r = rec.thetas[oldregions[chain]] - rec.thetas[newregion] +
                   (oldenergies[chain] - newenergy)
 
             if r > 0.0 || rand() < exp(r) #Accept
@@ -161,7 +161,7 @@ function sample!(rec::PopSAMCRecord, iters::Int;
             end
         end
         rec.count_total += k
-        
+
         if rec.iteration % 10000 == 0
             @printf "Iteration: %8d, delta: %5.3f, best energy: %7f, current first energy: %7f\n" rec.iteration rec.delta rec.mapenergy oldenergies[1]
         end
@@ -172,7 +172,7 @@ function sample!(rec::PopSAMCRecord, iters::Int;
 end
 
 function posterior_e(f::Function, rec::PopSAMCRecord)
-    K = length(rec.dbs) 
+    K = length(rec.dbs)
     N = length(rec.dbs[1])
     @assert K>0
     @assert N>0
@@ -184,7 +184,7 @@ function posterior_e(f::Function, rec::PopSAMCRecord)
     for k=1:K,i=1:N
         sumthetas += exp(maxthetas-rec.dbs_theta[k][i])
     end
-    
+
     sub = zero(f(rec.dbs[1][1]))
     for k=1:K,i=1:N
         sub += f(rec.dbs[k][i])*exp(maxthetas-rec.dbs_theta[k][i])
@@ -194,7 +194,7 @@ function posterior_e(f::Function, rec::PopSAMCRecord)
 end
 
 function cum_posterior_e(f::Function, rec::PopSAMCRecord)
-    K = length(rec.dbs) 
+    K = length(rec.dbs)
     N = length(rec.dbs[1])
     @assert K>0
     @assert N>0

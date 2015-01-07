@@ -3,6 +3,7 @@ type SAMCRecord <: MCMC
     mapvalue
     mapenergy :: Float64
     db :: Vector{Any}
+    db_theta :: Vector{Float64}
 
     counts :: Vector{Int}
     thetas :: Vector{Float64}
@@ -26,16 +27,17 @@ type SAMCRecord <: MCMC
     refden_power :: Float64
 end
 
-SAMCRecord(obj::Sampler) = SAMCRecord(obj,record(obj),Inf,Any[],
-                                        Int[],Float64[],Float64[],Float64[],
-                                        0.0:0.0,0,0,1,
-                                        1000,1,10000.0,1.0,1.0,
-                                        0,
-                                        Float64[],0.0)
+SAMCRecord(obj::Sampler) = SAMCRecord(
+    obj,record(obj),Inf,Array(typeof(record(obj)),0),Float64[],
+    Int[],Float64[],Float64[],Float64[],
+    0.0:0.0,0,0,1,
+    1000,1,10000.0,1.0,1.0,
+    0,
+    Float64[],0.0)
 
 function set_energy_limits(obj::Sampler; iters=1000, refden_power=0.0)
     record = SAMCRecord(obj)
-    low = energy(obj) 
+    low = energy(obj)
     high = low
     oldenergy = low
     energyval = low
@@ -88,7 +90,7 @@ function sample!(rec::SAMCRecord, iters::Int; temperature::Float64=1.0, beta::Fl
 
         if newenergy < rec.mapenergy #I need to decide if I want this or not
             rec.mapenergy = newenergy
-            rec.mapvalue = deepcopy(rec.obj)
+            rec.mapvalue = record(rec.obj)
         end
 
         ### Acceptance of new moves ###
@@ -125,9 +127,10 @@ function sample!(rec::SAMCRecord, iters::Int; temperature::Float64=1.0, beta::Fl
         rec.count_total += 1
 
         if rec.iteration >= rec.burn && rec.iteration%rec.thin == 0
-            push!(rec.db, deepcopy(rec.obj.bnd)) # FIXME: lazy hardcoding
+            push!(rec.db, record(rec.obj))
+            push!(rec.db_theta, rec.thetas[oldregion])
         end
-        
+
         if rec.iteration % 10000 == 0
             @printf "Iteration: %8d, delta: %5.3f, best energy: %7f, current energy: %7f\n" rec.iteration rec.delta rec.mapenergy oldenergy
         end
@@ -136,4 +139,49 @@ function sample!(rec::SAMCRecord, iters::Int; temperature::Float64=1.0, beta::Fl
     println("Accepted samples: $(rec.count_accept)")
     println("Total samples: $(rec.count_total)")
     println("Acceptance: $(rec.count_accept/rec.count_total)")
+end
+
+function posterior_e(f::Function, rec::SAMCRecord)
+    N = length(rec.db)
+    @assert N>0
+    sumthetas = 0.0
+    maxtheta = maximum(rec.db_theta)
+    for i=1:N
+        sumthetas += exp(maxtheta-rec.db_theta[i])
+    end
+
+    sub = zero(f(rec.db[1]))
+    for i=1:N
+        sub += f(rec.db[i])*exp(maxtheta-rec.db_theta[i])
+    end
+    sub /= sumthetas
+    sub
+end
+
+function cum_posterior_e(f::Function, rec::SAMCRecord)
+    N = length(rec.db)
+    @assert N>0
+    sumtheta = 0.0
+    maxthetas = -Inf
+
+    exres = zero(f(rec.db[1]))
+
+    cum_post = Array(typeof(exres),0)
+    fres = Array(typeof(exres),0)
+
+    for i=1:N
+        maxtheta = max(rec.db_theta[i],maxtheta)
+        push!(fres, f(rec.db[i]))
+
+        sumtheta = 0.0
+        for j=1:i
+            sumtheta += exp(maxtheta-rec.db_theta[j])
+        end
+        sub = zero(eltype(fres))
+        for j=1:i
+            sub += fres[j]*exp(maxtheta-rec.db_theta[j])
+        end
+        push!(cum_post, sub/sumtheta)
+    end
+    cum_post
 end
