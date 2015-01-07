@@ -90,3 +90,8 @@ sample!(popsamcsamp, 2000)
 #
 @show posterior_e(identity, popsamcsamp)
 ```
+
+Note that the object passed into the record constructor will be modified.  
+Therefore, you should make a copy if you want to retain the original.  
+(Originally this copy was made internally, but caused a hair-pull inducing bug 
+when an opaque C pointer type was passed in and then deallocated). 
