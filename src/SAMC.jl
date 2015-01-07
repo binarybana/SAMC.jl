@@ -16,12 +16,14 @@ energy(x::Sampler) = error("Must be instantiated for your sampler object")
 propose!(x::Sampler) = error("Must be instantiated for your sampler object")
 reject!(x::Sampler) = error("Must be instantiated for your sampler object")
 save!(x::Sampler) = error("Must be instantiated for your sampler object")
+record(x::Sampler) = error("Must be instantiated for your sampler object")
 
 include("mh.jl")
 include("amwg.jl")
 include("samc_sampler.jl")
 include("popsamc.jl")
 
-include("samc_utils.jl")
+#=include("samc_utils.jl")=# # Until I can do a conditional import on PyPlot
+#here
 
 end # module

@@ -1,6 +1,6 @@
 type MHRecord <: MCMC
     obj :: Sampler
-    mapvalue :: Sampler
+    mapvalue
     mapenergy :: Float64
     db :: Vector{Any}
 
@@ -16,7 +16,7 @@ type MHRecord <: MCMC
 end
 
 MHRecord(obj::Sampler; burn=0, thin=1) = MHRecord(deepcopy(obj),
-                                deepcopy(obj), #mapvalue
+                                record(obj), #mapvalue
                                 Inf, #mapenergy
                                 Any[], #db
                                 0,0,1, #accept, total, iteration
@@ -40,7 +40,7 @@ function sample!(rec::MHRecord, iters::Int; verbose=0)
 
         if newenergy < rec.mapenergy #I need to decide if I want this or not
             rec.mapenergy = newenergy
-            rec.mapvalue = deepcopy(rec.obj)
+            rec.mapvalue = record(rec.obj)
         end
 
         ### Acceptance of new moves ###
@@ -61,7 +61,7 @@ function sample!(rec::MHRecord, iters::Int; verbose=0)
         rec.count_total += 1
 
         if rec.iteration >= rec.burn && rec.iteration%rec.thin == 0
-            push!(rec.db, deepcopy(rec.obj))
+            push!(rec.db, record(rec.obj))
         end
 
         if (rec.iteration) % 1000 == 0 && verbose > 0

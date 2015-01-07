@@ -4,7 +4,7 @@ type AMWGRecord <: MCMC
     batchsize :: Int
     sigmas :: Vector{Float64}
     target :: Float64
-    mapvalue :: Sampler
+    mapvalue
     mapenergy :: Float64
     db :: Vector{Any}
 
@@ -20,7 +20,7 @@ AMWGRecord(obj::Sampler, blocks; burn=0, thin=1) = AMWGRecord(deepcopy(obj),
                                 50, # batchsize
                                 ones(blocks), #sigmas
                                 0.44, #target
-                                deepcopy(obj), #mapvalue
+                                record(obj), #mapvalue
                                 Inf, #mapenergy
                                 Any[], #db
                                 zeros(Int,blocks),1, #accept, iterations
@@ -41,7 +41,7 @@ function sample!(rec::AMWGRecord, iters::Int; verbose=0, adjust="burnin")
             propose!(rec.obj, i, rec.sigmas[i])
             newenergy = energy(rec.obj, i) 
             if newenergy < rec.mapenergy
-                rec.mapvalue = deepcopy(rec.obj)
+                rec.mapvalue = record(rec.obj)
                 rec.mapenergy = newenergy
             end
             r = oldenergy - newenergy

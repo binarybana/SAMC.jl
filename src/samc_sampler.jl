@@ -1,6 +1,6 @@
 type SAMCRecord <: MCMC
     obj :: Sampler
-    mapvalue :: Sampler
+    mapvalue
     mapenergy :: Float64
     db :: Vector{Any}
 
@@ -26,7 +26,7 @@ type SAMCRecord <: MCMC
     refden_power :: Float64
 end
 
-SAMCRecord(obj::Sampler) = SAMCRecord(obj,obj,Inf,Any[],
+SAMCRecord(obj::Sampler) = SAMCRecord(obj,record(obj),Inf,Any[],
                                         Int[],Float64[],Float64[],Float64[],
                                         0.0:0.0,0,0,1,
                                         1000,1,10000.0,1.0,1.0,
