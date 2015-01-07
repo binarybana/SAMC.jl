@@ -50,8 +50,8 @@ sampler = MySampler(0., 0., data)
 mh = MHRecord(sampler,burn=100)
 sample!(mh,2000)
 
-# Now mh.db will be a Vector{Any} of Floats (as in general the Sampler.curr
-# type is a pointer type
+# Now mh.db will be a Vector{Any} of Floats (as in general we don't yet test
+# the result of record() and try to specialize the container appropriately
 ```
 
 Now to use SAMC (or more specifically, the population variant), we could do:
@@ -64,5 +64,7 @@ popsamcsamp = set_energy_limits(genfunc, num_chains)
 # ^^ Convenience function to set energy limits
 popsamcsamp.stepscale = 10
 sample!(popsamcsamp, 2000)
+
+# Now popsamcsamp.dbs will be a Vector{Vector{Any}} with all recorded samples
 ```
 
