@@ -6,13 +6,14 @@ function plotsamc(s::PopSAMCRecord, burn=1)
     counts = s.counts
     energy_traces = s.energy_traces
     theta_traces = s.theta_traces
+    dbs_theta = s.dbs_theta
 
     if s.burn > 0
         println("Using burn in SAMC")
         burn = s.burn
     end
 
-    rows = 3
+    rows = 4
     cols = 2
 
     figure()
@@ -61,6 +62,19 @@ function plotsamc(s::PopSAMCRecord, burn=1)
     title("Histogram of normalized sample thetas from $(length(theta_trace)) iterations")
 
     subplot(rows, cols, 6)
+    plt.hist(part, weights=part, bins=50)
+    xlabel("exp(theta - theta_max)")
+    ylabel("Amount of weight at this value")
+
+    subplot(rows, cols, 7)
+    dbs_theta = vcat(dbs_theta...)
+    part = exp(dbs_theta - maximum(dbs_theta))
+    plt.hist(part, log=true, bins=100)
+    xlabel("exp(theta - theta_max)")
+    ylabel("Number of samples at this value")
+    title("Histogram of normalized sample thetas from $(length(dbs_theta)) iterations")
+
+    subplot(rows, cols, 8)
     plt.hist(part, weights=part, bins=50)
     xlabel("exp(theta - theta_max)")
     ylabel("Amount of weight at this value")
