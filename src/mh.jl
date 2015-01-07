@@ -26,7 +26,7 @@ MHRecord(obj::Sampler; burn=0, thin=1) = MHRecord(deepcopy(obj),
 
 #import Distributions.sample
 
-function sample(rec::MHRecord, iters::Int; verbose=0)
+function sample!(rec::MHRecord, iters::Int; verbose=0)
     oldenergy = energy(rec.obj)
     if verbose > 0
         println("Initial energy: $oldenergy")

@@ -75,7 +75,7 @@ function set_energy_limits(obj::Sampler; iters=1000, refden_power=0.0)
     record
 end
 
-function sample(rec::SAMCRecord, iters::Int; temperature::Float64=1.0, beta::Float64=1.0, verbose=0)
+function sample!(rec::SAMCRecord, iters::Int; temperature::Float64=1.0, beta::Float64=1.0, verbose=0)
     oldenergy = energy(rec.obj)
     oldregion = clamp(searchsortedfirst(rec.grid, oldenergy), 1, length(rec.grid))
     println("Initial energy: $oldenergy")

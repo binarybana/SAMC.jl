@@ -1,8 +1,8 @@
 module SAMC
 
-import StatsBase: sample
+import StatsBase: sample!
 
-export MCMC, Sampler, MHRecord, AMWGRecord, SAMCRecord, PopSAMCRecord, set_energy_limits, sample, plotsamc
+export MCMC, Sampler, MHRecord, AMWGRecord, SAMCRecord, PopSAMCRecord, set_energy_limits, sample!, plotsamc
 
 abstract MCMC
 abstract Sampler

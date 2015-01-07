@@ -75,7 +75,7 @@ function set_energy_limits(genfunc::Function, k::Int; iters=1000, refden_power=0
     record
 end
 
-function sample(rec::PopSAMCRecord, iters::Int; temperature::Float64=1.0, beta::Float64=1.0, verbose=0)
+function sample!(rec::PopSAMCRecord, iters::Int; temperature::Float64=1.0, beta::Float64=1.0, verbose=0)
     if rec.grid == 0.0:0.0
         throw(Exception("You must set_energy_limits on your PopSAMCRecord before calling sample"))
     end

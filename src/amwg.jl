@@ -27,7 +27,7 @@ AMWGRecord(obj::Sampler, blocks; burn=0, thin=1) = AMWGRecord(deepcopy(obj),
                                 burn,thin) #burn, thin
 
 
-function sample(rec::AMWGRecord, iters::Int; verbose=0, adjust="burnin")
+function sample!(rec::AMWGRecord, iters::Int; verbose=0, adjust="burnin")
     oldenergy = energy(rec.obj)
     if verbose>0
         println("Initial energy: $oldenergy")
