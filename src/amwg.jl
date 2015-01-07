@@ -73,7 +73,7 @@ function sample(rec::AMWGRecord, iters::Int; verbose=0, adjust="burnin")
         end
 
         if rec.iterations >= rec.burn && rec.iterations%rec.thin == 0
-            push!(rec.db, deepcopy(rec.obj.curr))
+            push!(rec.db, deepcopy(rec.obj))
         end
         
         if (rec.iterations) % 1000 == 0 && verbose>1
@@ -88,3 +88,27 @@ function sample(rec::AMWGRecord, iters::Int; verbose=0, adjust="burnin")
     return rec.block_accept./(rec.iterations-rec.burn)
 end
 
+function posterior_e(f::Function, rec::Union(MHRecord,AMWGRecord))
+    N = length(rec.db)
+    @assert N>0
+    sub = zero(f(rec.db[1]))
+    for i=1:N
+        sub += f(rec.db[i])
+      end
+    sub /= N
+end
+
+function cum_posterior_e(f::Function, rec::Union(MHRecord,AMWGRecord))
+    N = length(rec.db)
+    @assert N>0
+    sumthetas = 0.0
+    maxthetas = -Inf
+
+    sub = zero(f(rec.db[1]))
+    cum_post = Array(typeof(exres),0)
+    for i=1:N
+        sub += f(rec.db[i])
+        push!(cum_post, sub/i)
+    end
+    cum_post
+end
