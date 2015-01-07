@@ -19,7 +19,7 @@ save!(x::Sampler) = error("Must be instantiated for your sampler object")
 
 include("mh.jl")
 include("amwg.jl")
-include("samc.jl")
+include("samc_sampler.jl")
 include("popsamc.jl")
 
 include("samc_utils.jl")
