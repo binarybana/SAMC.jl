@@ -42,7 +42,7 @@ function PopSAMCRecord(genfunc::Function, k::Int)
     Float64[],0.0)
 end
 
-function set_energy_limits(genfunc::Function, k::Int; iters=1000, refden_power=0.0)
+function set_energy_limits(genfunc::Function, k::Int; iters=1000, refden_power=0.0, verbose=0)
     rec = PopSAMCRecord(genfunc, k)
     oldenergies = map(energy,rec.objs)
     low = minimum(oldenergies)
@@ -51,7 +51,7 @@ function set_energy_limits(genfunc::Function, k::Int; iters=1000, refden_power=0
         for j=1:k
             propose!(rec.objs[j])
             energyval = energy(rec.objs[j])
-            r = (oldenergies[j] - energyval) / 3.0 # Higher temperature for exploration
+            r = (oldenergies[j] - energyval) / 1.0 # Higher temperature for exploration
             if r > 0.0 || rand() < exp(r) # Accept
                 if energyval < low
                     low = energyval
@@ -68,10 +68,12 @@ function set_energy_limits(genfunc::Function, k::Int; iters=1000, refden_power=0
     spread = high - low
     low = ifloor(low - (1.0*spread))
     high = iceil(high + (0.2*spread))
-    println("Done. Setting limits to ($low, $high)")
     spread = high - low
     rec.scale = max(0.25, spread/100.0)
-    println("Setting scale to $(rec.scale)")
+    if verbose>0
+      println("Done. Setting limits to ($low, $high)")
+      println("Setting scale to $(rec.scale)")
+    end
     rec.grid = low:rec.scale:high
     rec.refden = Float64[rec.grid.len-1:-1:0].^refden_power
     rec.refden /= sum(rec.refden)
@@ -84,7 +86,8 @@ end
 function sample!(rec::PopSAMCRecord, iters::Int;
                  temperature::Float64=1.0,
                  beta::Float64=1.0,
-                 verbose=0)
+                 verbose=0,
+                 correct=true)
 
     if rec.grid == 0.0:0.0
         throw(Exception("You must set_energy_limits " *
@@ -96,11 +99,13 @@ function sample!(rec::PopSAMCRecord, iters::Int;
       length(rec.grid)), oldenergies)
     k = length(rec.objs)
 
-    print("Initial energies: ")
-    for i=1:k
-        @printf "%5.2f," oldenergies[i]
+    if verbose>0
+      print("Initial energies: ")
+      for i=1:k
+          @printf "%5.2f," oldenergies[i]
+      end
+      println("")
     end
-    println("")
 
     for current_iter = rec.iteration:(rec.iteration+iters)
         rec.iteration += 1
@@ -140,7 +145,7 @@ function sample!(rec::PopSAMCRecord, iters::Int;
 
         if rec.iteration < rec.burn
             rec.nonempty = findfirst(rec.counts)
-        else
+        elseif correct
             correction = rec.thetas[rec.nonempty]
             for i=1:length(rec.thetas)
                 #if rec.counts[i] > 0
@@ -162,13 +167,15 @@ function sample!(rec::PopSAMCRecord, iters::Int;
         end
         rec.count_total += k
 
-        if rec.iteration % 10000 == 0
+        if rec.iteration % 10000 == 0 && verbose > 0
             @printf "Iteration: %8d, delta: %5.3f, best energy: %7f, current first energy: %7f\n" rec.iteration rec.delta rec.mapenergy oldenergies[1]
         end
     end
-    println("Accepted samples: $(rec.count_accept)")
-    println("Total samples: $(rec.count_total)")
-    println("Acceptance: $(rec.count_accept/rec.count_total)")
+    if verbose > 0
+      println("Accepted samples: $(rec.count_accept)")
+      println("Total samples: $(rec.count_total)")
+      println("Acceptance: $(rec.count_accept/rec.count_total)")
+    end
 end
 
 function posterior_e(f::Function, rec::PopSAMCRecord)

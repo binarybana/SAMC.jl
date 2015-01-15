@@ -10,7 +10,7 @@ type SAMCRecord <: MCMC
     energy_trace :: Vector{Float64}
     theta_trace :: Vector{Float64}
 
-    grid :: Range{Float64}
+    grid :: AbstractArray{Float64}
     count_accept :: Int
     count_total :: Int
     iteration :: Int
@@ -35,7 +35,7 @@ SAMCRecord(obj::Sampler) = SAMCRecord(
     0,
     Float64[],0.0)
 
-function set_energy_limits(obj::Sampler; iters=1000, refden_power=0.0)
+function set_energy_limits(obj::Sampler; iters=1000, refden_power=0.0, verbose=0)
     record = SAMCRecord(obj)
     low = energy(obj)
     high = low
@@ -64,10 +64,12 @@ function set_energy_limits(obj::Sampler; iters=1000, refden_power=0.0)
     spread = high - low
     low = ifloor(low - (1.0*spread))
     high = iceil(high + (0.2*spread))
-    println("Done. Setting limits to ($low, $high)")
     spread = high - low
     record.scale = max(0.25, spread/100.0)
-    println("Setting scale to $(record.scale)")
+    if verbose > 0
+      println("Done. Setting limits to ($low, $high)")
+      println("Setting scale to $(record.scale)")
+    end
     record.grid = low:record.scale:high
     record.refden = Float64[record.grid.len-1:-1:0].^refden_power
     record.refden /= sum(record.refden)
@@ -77,10 +79,12 @@ function set_energy_limits(obj::Sampler; iters=1000, refden_power=0.0)
     record
 end
 
-function sample!(rec::SAMCRecord, iters::Int; temperature::Float64=1.0, beta::Float64=1.0, verbose=0)
+function sample!(rec::SAMCRecord, iters::Int; temperature::Float64=1.0, beta::Float64=1.0, verbose=0, correct=true)
     oldenergy = energy(rec.obj)
     oldregion = clamp(searchsortedfirst(rec.grid, oldenergy), 1, length(rec.grid))
-    println("Initial energy: $oldenergy")
+    if verbose>0
+      println("Initial energy: $oldenergy")
+    end
 
     for current_iter = rec.iteration:(rec.iteration+iters)
         rec.iteration += 1
@@ -96,6 +100,7 @@ function sample!(rec::SAMCRecord, iters::Int; temperature::Float64=1.0, beta::Fl
         ### Acceptance of new moves ###
         newregion = clamp(searchsortedfirst(rec.grid, newenergy), 1, length(rec.grid))
         r = rec.thetas[oldregion] - rec.thetas[newregion] + (oldenergy - newenergy)
+        # r = rec.thetas[newregion] - rec.thetas[oldregion] + (oldenergy - newenergy)
 
         if r > 0.0 || rand() < exp(r) #Accept
             rec.counts[newregion] += 1
@@ -115,9 +120,9 @@ function sample!(rec::SAMCRecord, iters::Int; temperature::Float64=1.0, beta::Fl
         push!(rec.theta_trace, rec.thetas[oldregion])
 
         if rec.iteration < rec.burn
-            nonempty = findfirst(rec.counts)
-        else
-            correction = rec.thetas[nonempty]
+            rec.nonempty = findfirst(rec.counts)
+        elseif correct
+            correction = rec.thetas[rec.nonempty]
             for i=1:length(rec.thetas)
                 #if rec.counts[i] > 0
                     rec.thetas[i] -= correction
@@ -131,14 +136,16 @@ function sample!(rec::SAMCRecord, iters::Int; temperature::Float64=1.0, beta::Fl
             push!(rec.db_theta, rec.thetas[oldregion])
         end
 
-        if rec.iteration % 10000 == 0
+        if rec.iteration % 10000 == 0 && verbose > 0
             @printf "Iteration: %8d, delta: %5.3f, best energy: %7f, current energy: %7f\n" rec.iteration rec.delta rec.mapenergy oldenergy
         end
     end
     #save_state_db(rec, temperature) #FIXME
-    println("Accepted samples: $(rec.count_accept)")
-    println("Total samples: $(rec.count_total)")
-    println("Acceptance: $(rec.count_accept/rec.count_total)")
+    if verbose > 0
+      println("Accepted samples: $(rec.count_accept)")
+      println("Total samples: $(rec.count_total)")
+      println("Acceptance: $(rec.count_accept/rec.count_total)")
+    end
 end
 
 function posterior_e(f::Function, rec::SAMCRecord)
@@ -184,4 +191,14 @@ function cum_posterior_e(f::Function, rec::SAMCRecord)
         push!(cum_post, sub/sumtheta)
     end
     cum_post
+end
+
+function estimate_w(rec::SAMCRecord)
+	C = logsumexp(rec.thetas[rec.counts.>0])
+	v = sum(rec.refden[rec.counts.==0]) * 1/(length(rec.grid)-sum(rec.counts.==0))
+
+	w = exp(rec.thetas - C) .* (rec.refden+v)
+	w_filt = w[rec.counts.>0]
+	psis = -log(w[rec.counts.>0])
+  return w,w_filt,psis
 end
