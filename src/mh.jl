@@ -26,6 +26,12 @@ MHRecord(obj::Sampler; burn=0, thin=1) = MHRecord(obj,
 
 #import Distributions.sample
 
+function sample!(recs::Vector{MHRecord}, iters::Int; verbose=0)
+  for rec in recs
+    sample!(rec, iters, verbose=verbose)
+  end
+end
+
 function sample!(rec::MHRecord, iters::Int; verbose=0)
     oldenergy = energy(rec.obj)
     if verbose > 0

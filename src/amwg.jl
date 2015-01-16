@@ -88,6 +88,20 @@ function sample!(rec::AMWGRecord, iters::Int; verbose=0, adjust="burnin")
     return rec.block_accept./(rec.iterations-rec.burn)
 end
 
+function posterior_e(f::Function, recs::Union(Vector{MHRecord},Vector{AMWGRecord}))
+  subN = length(recs[1].db)
+  N = sum(map(x->length(x.db), recs))
+  K = length(recs)
+  @assert N>0
+  @assert K>0
+  @assert N == subN*K
+  sub = zero(f(recs[1].db[1]))
+  for chain=1:K,i=1:subN
+      sub += f(recs[chain].db[i])
+    end
+  sub /= N
+end
+
 function posterior_e(f::Function, rec::Union(MHRecord,AMWGRecord))
     N = length(rec.db)
     @assert N>0
@@ -105,7 +119,7 @@ function cum_posterior_e(f::Function, rec::Union(MHRecord,AMWGRecord))
     maxthetas = -Inf
 
     sub = zero(f(rec.db[1]))
-    cum_post = Array(typeof(exres),0)
+    cum_post = Array(typeof(sub),0)
     for i=1:N
         sub += f(rec.db[i])
         push!(cum_post, sub/i)

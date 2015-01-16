@@ -35,23 +35,31 @@ end
 ########################
 # MH
 ########################
-data = rand(5)
-#This ^^ initializes the starting point of the chain and the data
+data = [0.0, 0.0, 1.0, 1.0]
 
 mh = MHRecord(MySampler(0., 0., data) ,burn=100)
-sample!(mh,2000)
+sample!(mh,20000)
 
 # Now mh.db will be a Vector{Any} of Floats (as in general the Sampler.curr
 # type is a pointer type
 
 # posterior average (expectation):
 @show posterior_e(identity, mh)
+
+########################
+# MH Multiple Chains
+########################
+mhchains = [MHRecord(MySampler(0., 0., data), burn=100) for x=1:10]
+sample!(mhchains, int(20000/10))
+
+@show posterior_e(identity, mhchains)
+
 ########################
 # AMWG
 ########################
 numblocks = 1
-amwg = AMWGRecord(MySampler(0., 0., data), numblocks,burn=100)
-sample!(amwg,2000)
+amwg = AMWGRecord(MySampler(0., 0., data), numblocks, burn=100)
+sample!(amwg, 20000)
 
 @show posterior_e(identity, amwg)
 ########################
@@ -61,7 +69,7 @@ sample!(amwg,2000)
 samcsamp = set_energy_limits(MySampler(0.,0.,data))
 # ^^ Convenience function to set energy limits
 samcsamp.stepscale = 10
-sample!(samcsamp, 2000)
+sample!(samcsamp, 20000)
 
 @show posterior_e(identity, samcsamp)
 ########################
@@ -73,7 +81,7 @@ genfunc = _ -> MySampler(0., 0., data)
 popsamcsamp = set_energy_limits(genfunc, num_chains)
 # ^^ Convenience function to set energy limits
 popsamcsamp.stepscale = 10
-sample!(popsamcsamp, 2000)
+sample!(popsamcsamp, div(20000,10))
 # Now popsamcsamp.dbs will be a Vector{Vector{Any}} with all recorded samples
 #
 @show posterior_e(identity, popsamcsamp)
