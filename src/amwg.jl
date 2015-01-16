@@ -88,6 +88,23 @@ function sample!(rec::AMWGRecord, iters::Int; verbose=0, adjust="burnin")
     return rec.block_accept./(rec.iterations-rec.burn)
 end
 
+##########################################################
+# Functions for both AMWG, MH, and multiple chain MH
+##########################################################
+
+samples(recs::Vector{MHRecord}) = vcat([x.db for x in recs]...)
+samples(rec::Union(MHRecord,AMWGRecord)) = rec.db
+
+mapenergy(recs::Vector{MHRecord}) = minimum(Float64[x.mapenergy for x in recs])
+mapenergy(rec::Union(MHRecord,AMWGRecord)) = rec.mapenergy
+
+function mapvalue(recs::Vector{MHRecord})
+  i = indmin(Float64[x.mapenergy for x in recs])
+  recs[i].mapvalue
+end
+
+mapvalue(rec::Union(MHRecord,AMWGRecord)) = rec.mapvalue
+
 function posterior_e(f::Function, recs::Union(Vector{MHRecord},Vector{AMWGRecord}))
   subN = length(recs[1].db)
   N = sum(map(x->length(x.db), recs))

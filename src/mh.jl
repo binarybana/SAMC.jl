@@ -81,4 +81,3 @@ function sample!(rec::MHRecord, iters::Int; verbose=0)
         println("Acceptance: $(rec.count_accept/rec.count_total)")
     end
 end
-

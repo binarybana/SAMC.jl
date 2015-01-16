@@ -178,6 +178,15 @@ function sample!(rec::PopSAMCRecord, iters::Int;
     end
 end
 
+##########################################################
+# Functions for both SAMC and PopSAMC
+##########################################################
+
+# samples(recs::Vector{SAMCRecord}) = hcat([x.db for x in recs]...)
+
+mapenergy(rec::Union(PopSAMCRecord,SAMCRecord)) = rec.mapenergy
+mapvalue(rec::Union(PopSAMCRecord,SAMCRecord)) = rec.mapvalue
+
 function posterior_e(f::Function, rec::PopSAMCRecord)
     K = length(rec.dbs)
     N = length(rec.dbs[1])

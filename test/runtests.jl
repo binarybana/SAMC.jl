@@ -45,6 +45,14 @@ sample!(mh,20000)
 
 # posterior average (expectation):
 @show posterior_e(identity, mh)
+mh_samps = samples(mh) # Get posterior samples
+mh_mape = mapenergy(mh) # Get MAP energy
+mh_mapv = mapvalue(mh) # Get the MAP energy sample
+
+@test ndims(mh_samps) == 1
+@test length(mh_samps) > 0
+@test 0.45 < mh_mapv < 0.55
+@test 4 < mh_mape < 5
 
 ########################
 # MH Multiple Chains
@@ -53,6 +61,14 @@ mhchains = [MHRecord(MySampler(0., 0., data), burn=100) for x=1:10]
 sample!(mhchains, int(20000/10))
 
 @show posterior_e(identity, mhchains)
+mhc_samps = samples(mhchains) # Get posterior samples
+mhc_mape = mapenergy(mhchains) # Get MAP energy
+mhc_mapv = mapvalue(mhchains) # Get the MAP energy sample
+
+@test ndims(mhc_samps) == 1
+@test length(mhc_samps) > 0
+@test 0.45 < mhc_mapv < 0.55
+@test 4 < mhc_mape < 5
 
 ########################
 # AMWG
@@ -62,6 +78,14 @@ amwg = AMWGRecord(MySampler(0., 0., data), numblocks, burn=100)
 sample!(amwg, 20000)
 
 @show posterior_e(identity, amwg)
+ag_samps = samples(amwg) # Get posterior samples
+ag_mape = mapenergy(amwg) # Get MAP energy
+ag_mapv = mapvalue(amwg) # Get the MAP energy sample
+
+@test ndims(ag_samps) == 1
+@test length(ag_samps) > 0
+@test 0.45 < ag_mapv < 0.55
+@test 4 < ag_mape < 5
 ########################
 # SAMC
 ########################
@@ -72,6 +96,11 @@ samcsamp.stepscale = 10
 sample!(samcsamp, 20000)
 
 @show posterior_e(identity, samcsamp)
+# s_samps = samples(samcsamp) # Resampling not currently implemented with weighted SAMC
+s_mape = mapenergy(samcsamp) # Get MAP energy
+s_mapv = mapvalue(samcsamp) # Get the MAP energy sample
+@test 0.45 < s_mapv < 0.55
+@test 4 < s_mape < 5
 ########################
 # POP SAMC
 ########################
@@ -85,3 +114,9 @@ sample!(popsamcsamp, div(20000,10))
 # Now popsamcsamp.dbs will be a Vector{Vector{Any}} with all recorded samples
 #
 @show posterior_e(identity, popsamcsamp)
+# ps_samps = samples(popsamcsamp) # Resampling not currently implemented with weighted SAMC
+ps_mape = mapenergy(popsamcsamp) # Get MAP energy
+ps_mapv = mapvalue(popsamcsamp) # Get the MAP energy sample
+
+@test 0.45 < ps_mapv < 0.55
+@test 4 < ps_mape < 5

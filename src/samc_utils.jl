@@ -139,4 +139,3 @@ function plotsamc(s::SAMCRecord, burn=1)
     xlabel("exp(theta - theta_max)")
     ylabel("Amount of weight at this value")
 end
-
