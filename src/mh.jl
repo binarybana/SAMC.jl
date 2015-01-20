@@ -81,3 +81,40 @@ function sample!(rec::MHRecord, iters::Int; verbose=0)
         println("Acceptance: $(rec.count_accept/rec.count_total)")
     end
 end
+
+##########################################################
+# Functions for multiple chain MH
+##########################################################
+
+function gelman_rubin(f::Function, samplers::Vector{MHRecord})
+    # parameters in db must be scalars, vectors or matrices
+
+    m = length(samplers)
+    n = length(samplers[1])
+
+    assert(all((map(length,samplers) .- n).==0)) # ... for now
+
+    ex = f(samplers[1].db[1])
+    extype = typeof(ex)
+
+    if extype <: Number
+        # vector of vectors
+        posts = [convert(Vector{extype}, map(f, x.db)) for x in samplers]
+    elseif ndims(ex) == 1
+        # vector of matrices
+        posts = [vcat(map(f, x.db)...) for x in samplers]
+    elseif ndims(ex) == 2
+        # vector of matrices
+        posts = [vcat(map(y->vec(f(y))', x.db)...) for x in samplers]
+    end
+
+    # Dims: [chain] X [iteration X params]
+
+    vars = vcat(map(x->var(x,1), posts)...)
+    means = vcat(map(x->mean(x,1), posts)...)
+    # Dims: [chain X params]
+    W = mean(vars,1)
+    B_jk = var(means,1)
+    # Dims: [params]
+    return vec(sqrt(((n-1)/n .* W .+ B_jk) ./ W))
+end

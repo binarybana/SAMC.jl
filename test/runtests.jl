@@ -64,11 +64,14 @@ sample!(mhchains, int(20000/10))
 mhc_samps = samples(mhchains) # Get posterior samples
 mhc_mape = mapenergy(mhchains) # Get MAP energy
 mhc_mapv = mapvalue(mhchains) # Get the MAP energy sample
+mhc_gelman = gelman_rubin(identity, mhchains) # Gelman Rubin Statistic 
+# (only for multiple chain MH atm)
 
 @test ndims(mhc_samps) == 1
 @test length(mhc_samps) > 0
 @test 0.45 < mhc_mapv < 0.55
 @test 4 < mhc_mape < 5
+@test 0.95 < mhc_gelman[1] < 1.05
 
 ########################
 # AMWG

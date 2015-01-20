@@ -16,7 +16,8 @@ export MCMC,
        cum_posterior_e,
        samples,
        mapvalue,
-       mapenergy
+       mapenergy,
+       gelman_rubin
 
 abstract MCMC
 abstract Sampler
