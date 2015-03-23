@@ -75,7 +75,7 @@ function set_energy_limits(genfunc::Function, k::Int; iters=1000, refden_power=0
       println("Setting scale to $(rec.scale)")
     end
     rec.grid = low:rec.scale:high
-    rec.refden = Float64[rec.grid.len-1:-1:0].^refden_power
+    rec.refden = Float64[rec.grid.len-1:-1:0;].^refden_power
     rec.refden /= sum(rec.refden)
     rec.refden_power = refden_power
     rec.counts = zeros(Int, length(rec.grid))
@@ -198,12 +198,12 @@ function posterior_e(f::Function, rec::PopSAMCRecord)
         maxthetas = max(maximum(rec.dbs_theta[k]), maxthetas)
     end
     for k=1:K,i=1:N
-        sumthetas += exp(maxthetas-rec.dbs_theta[k][i])
+        sumthetas += exp(rec.dbs_theta[k][i]-maxthetas)
     end
 
     sub = zero(f(rec.dbs[1][1]))
     for k=1:K,i=1:N
-        sub += f(rec.dbs[k][i])*exp(maxthetas-rec.dbs_theta[k][i])
+        sub += f(rec.dbs[k][i])*exp(rec.dbs_theta[k][i]-maxthetas)
     end
     sub /= sumthetas
     sub
@@ -229,11 +229,11 @@ function cum_posterior_e(f::Function, rec::PopSAMCRecord)
         end
         sumthetas = 0.0
         for k=1:K,j=1:i
-            sumthetas += exp(maxthetas-rec.dbs_theta[k][j])
+            sumthetas += exp(rec.dbs_theta[k][j]-maxthetas)
         end
         sub = zero(eltype(fres[1]))
         for k=1:K,j=1:i
-            sub += fres[k][j]*exp(maxthetas-rec.dbs_theta[k][j])
+            sub += fres[k][j]*exp(rec.dbs_theta[k][j]-maxthetas)
         end
         push!(cum_post, sub/sumthetas)
     end

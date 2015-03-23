@@ -71,7 +71,7 @@ function set_energy_limits(obj::Sampler; iters=1000, refden_power=0.0, verbose=0
       println("Setting scale to $(record.scale)")
     end
     record.grid = low:record.scale:high
-    record.refden = Float64[record.grid.len-1:-1:0].^refden_power
+    record.refden = Float64[record.grid.len-1:-1:0;].^refden_power
     record.refden /= sum(record.refden)
     record.refden_power = refden_power
     record.counts = zeros(Int, length(record.grid))
@@ -154,12 +154,12 @@ function posterior_e(f::Function, rec::SAMCRecord)
     sumthetas = 0.0
     maxtheta = maximum(rec.db_theta)
     for i=1:N
-        sumthetas += exp(maxtheta-rec.db_theta[i])
+        sumthetas += exp(rec.db_theta[i]-maxtheta)
     end
 
     sub = zero(f(rec.db[1]))
     for i=1:N
-        sub += f(rec.db[i])*exp(maxtheta-rec.db_theta[i])
+        sub += f(rec.db[i])*exp(rec.db_theta[i]-maxtheta)
     end
     sub /= sumthetas
     sub
@@ -182,11 +182,11 @@ function cum_posterior_e(f::Function, rec::SAMCRecord)
 
         sumtheta = 0.0
         for j=1:i
-            sumtheta += exp(maxtheta-rec.db_theta[j])
+            sumtheta += exp(rec.db_theta[j]-maxtheta)
         end
         sub = zero(eltype(fres))
         for j=1:i
-            sub += fres[j]*exp(maxtheta-rec.db_theta[j])
+            sub += fres[j]*exp(rec.db_theta[j]-maxtheta)
         end
         push!(cum_post, sub/sumtheta)
     end
