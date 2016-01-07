@@ -62,8 +62,8 @@ function set_energy_limits(obj::Sampler; iters=1000, refden_power=0.0, verbose=0
         end
     end
     spread = high - low
-    low = ifloor(low - (1.0*spread))
-    high = iceil(high + (0.2*spread))
+    low = floor(Int, low - (1.0*spread))
+    high = ceil(Int, high + (0.2*spread))
     spread = high - low
     record.scale = max(0.25, spread/100.0)
     if verbose > 0

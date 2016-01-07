@@ -93,19 +93,19 @@ end
 ##########################################################
 
 samples(recs::Vector{MHRecord}) = vcat([x.db for x in recs]...)
-samples(rec::Union(MHRecord,AMWGRecord)) = rec.db
+samples(rec::Union{MHRecord,AMWGRecord}) = rec.db
 
 mapenergy(recs::Vector{MHRecord}) = minimum(Float64[x.mapenergy for x in recs])
-mapenergy(rec::Union(MHRecord,AMWGRecord)) = rec.mapenergy
+mapenergy(rec::Union{MHRecord,AMWGRecord}) = rec.mapenergy
 
 function mapvalue(recs::Vector{MHRecord})
   i = indmin(Float64[x.mapenergy for x in recs])
   recs[i].mapvalue
 end
 
-mapvalue(rec::Union(MHRecord,AMWGRecord)) = rec.mapvalue
+mapvalue(rec::Union{MHRecord,AMWGRecord}) = rec.mapvalue
 
-function posterior_e(f::Function, recs::Union(Vector{MHRecord},Vector{AMWGRecord}))
+function posterior_e(f::Function, recs::Union{Vector{MHRecord},Vector{AMWGRecord}})
   subN = length(recs[1].db)
   N = sum(map(x->length(x.db), recs))
   K = length(recs)
@@ -119,7 +119,7 @@ function posterior_e(f::Function, recs::Union(Vector{MHRecord},Vector{AMWGRecord
   sub /= N
 end
 
-function posterior_e(f::Function, rec::Union(MHRecord,AMWGRecord))
+function posterior_e(f::Function, rec::Union{MHRecord,AMWGRecord})
     N = length(rec.db)
     @assert N>0
     sub = zero(f(rec.db[1]))
@@ -129,7 +129,7 @@ function posterior_e(f::Function, rec::Union(MHRecord,AMWGRecord))
     sub /= N
 end
 
-function cum_posterior_e(f::Function, rec::Union(MHRecord,AMWGRecord))
+function cum_posterior_e(f::Function, rec::Union{MHRecord,AMWGRecord})
     N = length(rec.db)
     @assert N>0
     sumthetas = 0.0

@@ -21,8 +21,8 @@ MHRecord(obj::Sampler; burn=0, thin=1) = MHRecord(obj,
                                 Array(typeof(record(obj)),0), #db
                                 0,0,1, #accept, total, iteration
                                 burn,thin, #burn, thin
-                                (Int=>Int)[],
-                                (Int=>Int)[])
+                                Dict{Int,Int}(),
+                                Dict{Int,Int}())
 
 #import Distributions.sample
 

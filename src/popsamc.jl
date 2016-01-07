@@ -66,8 +66,8 @@ function set_energy_limits(genfunc::Function, k::Int; iters=1000, refden_power=0
         end
     end
     spread = high - low
-    low = ifloor(low - (1.0*spread))
-    high = iceil(high + (0.2*spread))
+    low = floor(Int, low - (1.0*spread))
+    high = ceil(Int, high + (0.2*spread))
     spread = high - low
     rec.scale = max(0.25, spread/100.0)
     if verbose>0
@@ -184,8 +184,8 @@ end
 
 # samples(recs::Vector{SAMCRecord}) = hcat([x.db for x in recs]...)
 
-mapenergy(rec::Union(PopSAMCRecord,SAMCRecord)) = rec.mapenergy
-mapvalue(rec::Union(PopSAMCRecord,SAMCRecord)) = rec.mapvalue
+mapenergy(rec::Union{PopSAMCRecord,SAMCRecord}) = rec.mapenergy
+mapvalue(rec::Union{PopSAMCRecord,SAMCRecord}) = rec.mapvalue
 
 function posterior_e(f::Function, rec::PopSAMCRecord)
     K = length(rec.dbs)

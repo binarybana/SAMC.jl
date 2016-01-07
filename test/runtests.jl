@@ -57,8 +57,8 @@ mh_mapv = mapvalue(mh) # Get the MAP energy sample
 ########################
 # MH Multiple Chains
 ########################
-mhchains = [MHRecord(MySampler(0., 0., data), burn=100) for x=1:10]
-sample!(mhchains, int(20000/10))
+mhchains = SAMC.MHRecord[MHRecord(MySampler(0., 0., data), burn=100) for x=1:10]
+sample!(mhchains, round(Int, 20000/10))
 
 @show posterior_e(identity, mhchains)
 mhc_samps = samples(mhchains) # Get posterior samples
